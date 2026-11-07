@@ -1,6 +1,6 @@
-# [Project name]
+# Discovery
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+AI-guided customer discovery for first-time founders: industry research, recruiting guidance, interview kits, and evidence synthesis.
 
 ## Run & Operate
 

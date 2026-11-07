@@ -11,6 +11,38 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /discovery/generate:
+    post:
+      operationId: generateDiscovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscoveryInput"
+      responses:
+        "200":
+          description: Generated discovery content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveryOutput"
+  /discovery/chat:
+    post:
+      operationId: chatDiscovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatInput"
+      responses:
+        "200":
+          description: Contextual answer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveryOutput"
   /healthz:
     get:
       operationId: healthCheck
@@ -26,6 +58,38 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    DiscoveryInput:
+      type: object
+      required: [industry, section]
+      properties:
+        industry: { type: string, minLength: 1, maxLength: 300 }
+        idea: { type: string, maxLength: 3000 }
+        customer: { type: string, maxLength: 1000 }
+        section: { type: string, enum: [brief, people, kit, synthesis] }
+        context: { type: string, maxLength: 45000 }
+        notes: { type: string, maxLength: 40000 }
+    ChatInput:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string, minLength: 1, maxLength: 4000 }
+        context: { type: string, maxLength: 60000 }
+        history:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+    ChatMessage:
+      type: object
+      required: [role, content]
+      properties:
+        role: { type: string, enum: [user, assistant] }
+        content: { type: string, maxLength: 12000 }
+    DiscoveryOutput:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string }
     HealthStatus:
       type: object
       properties:

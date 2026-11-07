@@ -1,0 +1,1 @@
+- [Discovery product boundaries](discovery-product.md) — evidence-first founder coaching; browser-local saving and no automatic outreach.
