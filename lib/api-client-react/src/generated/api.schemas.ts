@@ -5,6 +5,111 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface FounderInput {
+  /** @maxLength 3000 */
+  skills?: string;
+  /** @maxLength 3000 */
+  interests?: string;
+  /** @maxLength 3000 */
+  experience?: string;
+  /** @maxLength 3000 */
+  problems?: string;
+  /** @maxLength 6000 */
+  seedDirection?: string;
+}
+
+export interface StartupDirection {
+  title: string;
+  /** @maxLength 300 */
+  industry: string;
+  problem: string;
+  /** @maxLength 1000 */
+  customer: string;
+  founderFit: string;
+  solution: string;
+}
+
+export interface DirectionsOutput {
+  /**
+     * @minItems 5
+     * @maxItems 5
+     */
+  ideas: StartupDirection[];
+}
+
+export interface InterviewIdeasInput {
+  /**
+     * @minLength 1
+     * @maxLength 40000
+     */
+  notes: string;
+  /** @maxLength 300 */
+  industry?: string;
+  sample?: boolean;
+}
+
+export interface EvidenceQuote {
+  /** @minLength 1 */
+  text: string;
+  /** @nullable */
+  participant: string | null;
+}
+
+export interface ParticipantEvidence {
+  /** @minLength 1 */
+  label: string;
+  /** @minLength 1 */
+  excerpt: string;
+}
+
+export interface InterviewIdea {
+  title: string;
+  problem: string;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  participantCount: number | null;
+  participants: ParticipantEvidence[];
+  /** @maxItems 2 */
+  quotes: EvidenceQuote[];
+  evidenceCaveat: string;
+  targetSegment: string;
+  painIntensity: string;
+  solution: string;
+  workarounds: string;
+  willingnessToPay: string;
+  riskiestAssumption: string;
+  cheapestTest: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  painSeverity: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  frequency: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  evidenceStrength: number;
+  scoreRationale: string;
+}
+
+export interface InterviewIdeasOutput {
+  /** @maxItems 5 */
+  ideas: InterviewIdea[];
+  gaps: string[];
+  /**
+     * @minItems 2
+     * @maxItems 3
+     */
+  followUpQuestions: string[];
+}
+
 export type DiscoveryInputSection = typeof DiscoveryInputSection[keyof typeof DiscoveryInputSection];
 
 

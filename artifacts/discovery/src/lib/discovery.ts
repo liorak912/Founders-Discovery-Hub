@@ -1,14 +1,18 @@
-import type { ChatMsg, Draft, Project, SectionKey, Step } from './store';
+import type { ChatMsg, Draft, FounderProfile, IdeaSet, Project, SectionKey, Step } from './store';
 
 export const LIMITS = { context: 45000, chatContext: 60000, historyItems: 20, historyChars: 12000, notes: 40000, message: 4000 };
 
-export const STEPS: { n: Step; label: string; short: string; blurb: string }[] = [
+export const STEPS: { n: Step; label: string; short: string; blurb: string; optional?: boolean }[] = [
+  { n: 0, label: 'Find an idea', short: 'Idea', blurb: 'Optional. Problem-first directions from your background.', optional: true },
   { n: 1, label: 'Frame the market', short: 'Frame', blurb: 'Name the industry. Your idea is optional.' },
   { n: 2, label: 'Industry brief', short: 'Brief', blurb: 'How the market works and what might hurt.' },
   { n: 3, label: 'Who to talk to', short: 'People', blurb: 'Segments, roles, and where they gather.' },
   { n: 4, label: 'Interview kit', short: 'Kit', blurb: 'A non-leading script and your outreach note.' },
   { n: 5, label: 'Synthesize', short: 'Synthesize', blurb: 'Paste real notes. See what held up.' },
+  { n: 6, label: 'Ideas from interviews', short: 'Ideas', blurb: 'Problems your notes actually support.' },
 ];
+
+export const stepInfo = (n: Step) => STEPS.find((s) => s.n === n) ?? STEPS[1];
 
 export const SECTION_FOR_STEP: Record<number, SectionKey | undefined> = { 2: 'brief', 3: 'people', 4: 'kit', 5: 'synthesis' };
 
@@ -41,18 +45,35 @@ export function buildGenContext(p: Project, section: SectionKey): string | undef
   return clip(out, LIMITS.context);
 }
 
-export function buildChatContext(opts: { project: Project | null; draft: Draft; step: Step }): string {
-  const { project, draft, step } = opts;
+export function buildChatContext(opts: { project: Project | null; draft: Draft; step: Step; founder?: FounderProfile; ideaSet?: IdeaSet | null }): string {
+  const { project, draft, step, founder, ideaSet } = opts;
   const head: string[] = [];
   const src = project ?? { industry: draft.industry, idea: draft.idea, customer: draft.customer };
   head.push(project ? `Project: ${project.name}${project.sample ? ' (built-in illustrative sample)' : ''}` : 'No project created yet; the founder is still filling in step 1.');
-  head.push(`Current step: ${step} - ${STEPS[step - 1].label}`);
+  head.push(`Current step: ${step} - ${stepInfo(step).label}`);
   head.push(`Industry: ${src.industry || '(not entered yet)'}`);
   if (src.idea) head.push(`Rough idea: ${src.idea}`);
   if (src.customer) head.push(`Possible customer: ${src.customer}`);
   const header = head.join('\n');
-  if (!project) return clip(header, LIMITS.chatContext);
   const parts: string[] = [];
+  if (step === 0 && founder) {
+    const f = [['Skills', founder.skills], ['Interests', founder.interests], ['Industry experience or access', founder.experience], ['Problems noticed', founder.problems]]
+      .filter(([, v]) => v.trim()).map(([k, v]) => `- ${k}: ${v}`);
+    if (f.length) parts.push(`### FOUNDER PROFILE\n${f.join('\n')}`);
+    if (ideaSet) parts.push(`### GENERATED PROBLEM-FIRST DIRECTIONS (AI suggestions, unvalidated)${ideaSet.seed ? `\nVariations of: ${ideaSet.seed.title}` : ''}\n` +
+      ideaSet.ideas.map((d, i) => `${i + 1}. ${d.title} [${d.industry}]\nProblem: ${d.problem}\nCustomer: ${d.customer}\nFounder fit: ${d.founderFit}\nSolution: ${d.solution}`).join('\n\n'));
+  }
+  if (step === 6 && project?.interviewIdeas) {
+    const r = project.interviewIdeas;
+    parts.push(`### IDEAS FROM INTERVIEWS (AI judgment over the founder's notes, not validation)${project.notes !== r.sourceNotes ? '\n(Notes changed since this was generated; may be outdated.)' : ''}\n` +
+      (r.ideas.length ? r.ideas.map((d, i) => `${i + 1}. ${d.title}\nProblem: ${d.problem}\nParticipants: ${d.participantCount ?? 'Unknown'}\nScores: pain ${d.painSeverity}, frequency ${d.frequency}, evidence ${d.evidenceStrength}. ${d.scoreRationale}\nRiskiest assumption: ${d.riskiestAssumption}`).join('\n\n') : 'No grounded ideas were found in the notes.') +
+      (r.gaps.length ? `\nGaps: ${r.gaps.join('; ')}` : '') + (r.followUpQuestions.length ? `\nFollow-up questions: ${r.followUpQuestions.join(' | ')}` : ''));
+  }
+  if (!project) {
+    if (!parts.length) return clip(header, LIMITS.chatContext);
+    const per = Math.floor((LIMITS.chatContext - header.length - 200) / parts.length);
+    return clip([header, ...parts.map((x) => clip(x, per))].join('\n\n'), LIMITS.chatContext);
+  }
   (['brief', 'people', 'kit', 'synthesis'] as SectionKey[]).forEach((k) => {
     if (project.sections[k]) parts.push(`### ${TITLES[k]}\n${project.sections[k]}`);
   });

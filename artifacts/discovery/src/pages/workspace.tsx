@@ -20,7 +20,10 @@ import { ChatPanel } from '@/components/chat-panel';
 import { Markdown } from '@/components/markdown';
 import { GeneratedSection, SectionShell, GenError, GenSkeleton } from '@/components/section-view';
 import { useStore, type Project, type SectionKey, type Step } from '@/lib/store';
-import { buildGenContext, clip, errorMessage, LIMITS, splitKit, STEPS } from '@/lib/discovery';
+import { buildGenContext, clip, errorMessage, LIMITS, splitKit, STEPS, stepInfo } from '@/lib/discovery';
+import { FindIdeaStep } from '@/components/find-idea-step';
+import { InterviewIdeasStep } from '@/components/interview-ideas-step';
+import { useDirectionsGen, useInterviewIdeasGen } from '@/lib/use-idea-gen';
 import { cn } from '@/lib/utils';
 
 type GenState = Record<string, { pending?: boolean; error?: string }>;
@@ -154,8 +157,9 @@ function ProjectSwitcher() {
   );
 }
 
-function Stepper({ step, project, onGo }: { step: Step; project: Project | null; onGo: (s: Step) => void }) {
-  const done = (n: Step) => (n === 1 ? !!project : !!project?.sections[(['brief', 'people', 'kit', 'synthesis'] as SectionKey[])[n - 2]]);
+function Stepper({ step, project, onGo, hasDirections }: { step: Step; project: Project | null; onGo: (s: Step) => void; hasDirections: boolean }) {
+  const done = (n: Step) =>
+    n === 0 ? hasDirections : n === 1 ? !!project : n === 6 ? !!project?.interviewIdeas : !!project?.sections[(['brief', 'people', 'kit', 'synthesis'] as SectionKey[])[n - 2]];
   return (
     <nav aria-label="Progress" className="border-b bg-background/80 backdrop-blur">
       <ol className="mx-auto flex max-w-[1500px] items-stretch px-2 sm:px-6">
@@ -164,13 +168,13 @@ function Stepper({ step, project, onGo }: { step: Step; project: Project | null;
           const isDone = done(s.n);
           const locked = s.n > 1 && !project;
           return (
-            <li key={s.n} className="relative flex-1">
+            <li key={s.n} className="relative min-w-0 flex-1">
               <button
                 onClick={() => !locked && onGo(s.n)}
                 disabled={locked}
                 aria-current={isActive ? 'step' : undefined}
                 className={cn(
-                  'group flex w-full items-center gap-2.5 px-1.5 py-3 text-left transition sm:px-3',
+                  'group flex w-full items-center justify-center gap-2 px-0.5 py-3 text-left transition sm:px-2 lg:justify-start lg:gap-2.5 lg:px-3',
                   locked ? 'cursor-not-allowed opacity-45' : 'hover:bg-secondary/60',
                 )}
                 data-testid={`button-step-${s.n}`}
@@ -184,12 +188,13 @@ function Stepper({ step, project, onGo }: { step: Step; project: Project | null;
                   )}
                 >
                   {isDone && !isActive ? <Check className="h-3.5 w-3.5" /> : s.n}
+                  <span className="sr-only">{` ${s.label}${s.optional ? ' (optional)' : ''}${isDone ? ', done' : ''}${locked ? ', needs a project' : ''}`}</span>
                 </span>
-                <span className="hidden min-w-0 md:block">
+                <span className="hidden min-w-0 lg:block" aria-hidden>
                   <span className={cn('block truncate text-sm font-medium', !isActive && 'text-muted-foreground group-hover:text-foreground')}>{s.label}</span>
                   <span className="hidden truncate text-[11px] text-muted-foreground xl:block">{s.blurb}</span>
                 </span>
-                <span className={cn('text-xs font-medium md:hidden', isActive ? 'block' : 'hidden')}>{s.short}</span>
+                <span className={cn('hidden text-xs font-medium lg:hidden', isActive && 'sm:block')}>{s.short}</span>
               </button>
               <span className="absolute inset-x-0 bottom-0 h-[3px] bg-border" />
               <span
@@ -219,7 +224,7 @@ function SampleBanner() {
   );
 }
 
-function FrameStep({ project, onCreate, onContinue }: { project: Project | null; onCreate: () => void; onContinue: () => void }) {
+function FrameStep({ project, onCreate, onContinue, onFindIdea }: { project: Project | null; onCreate: () => void; onContinue: () => void; onFindIdea?: () => void }) {
   const { draft, setDraft, updateProject } = useStore();
   const values = project ?? draft;
   const [touched, setTouched] = useState(false);
@@ -298,7 +303,7 @@ function FrameStep({ project, onCreate, onContinue }: { project: Project | null;
         <aside className="space-y-3 rounded-xl bg-secondary/60 p-4 text-sm">
           <div className="font-display font-semibold">What happens next</div>
           <ol className="space-y-2.5 text-muted-foreground">
-            {STEPS.slice(1).map((s) => (
+            {STEPS.filter((s) => s.n >= 2).map((s) => (
               <li key={s.n} className="flex gap-2.5">
                 <span className="font-mono text-xs text-[hsl(var(--chart-2))]">0{s.n}</span>
                 <span><span className="font-medium text-foreground">{s.label}.</span> {s.blurb}</span>
@@ -308,6 +313,11 @@ function FrameStep({ project, onCreate, onContinue }: { project: Project | null;
           <p className="border-t pt-3 text-xs text-muted-foreground">
             The goal is not a better pitch. It's ten honest conversations with people who live the problem.
           </p>
+          {onFindIdea && (
+            <button type="button" onClick={onFindIdea} className="text-left text-xs font-medium text-[hsl(var(--chart-2))] underline-offset-2 hover:underline" data-testid="link-find-idea">
+              No idea yet? Try step 0, Find an idea.
+            </button>
+          )}
         </aside>
       </form>
     </SectionShell>
@@ -402,7 +412,7 @@ function KitStep({ project, g, onGen }: { project: Project; g: { pending?: boole
   );
 }
 
-function SynthesisStep({ project, g, onGen }: { project: Project; g: { pending?: boolean; error?: string }; onGen: () => void }) {
+function SynthesisStep({ project, g, onGen, onIdeas }: { project: Project; g: { pending?: boolean; error?: string }; onGen: () => void; onIdeas: () => void }) {
   const { updateProject } = useStore();
   const notesEmpty = !project.notes.trim();
   const over = project.notes.length > LIMITS.notes;
@@ -438,6 +448,19 @@ function SynthesisStep({ project, g, onGen }: { project: Project; g: { pending?:
             {notesEmpty && <p className="mt-2 text-xs text-muted-foreground">Synthesis needs your real notes. Paste at least one conversation.</p>}
             {over && <p className="mt-2 text-xs text-destructive">Notes are over the limit. Trim them or synthesize in batches.</p>}
           </div>
+          <button
+            type="button"
+            onClick={onIdeas}
+            className="flex w-full items-center gap-3 rounded-2xl border bg-card p-4 text-left transition hover:border-primary/40"
+            data-testid="link-step6"
+          >
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border font-mono text-xs">6</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold">Ideas from your interviews</span>
+              <span className="block text-xs text-muted-foreground">Scored problems, quotes, and follow-up questions from these notes.</span>
+            </span>
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </button>
         </div>
         <div className="min-w-0 space-y-4">
           {g.error && !g.pending && <GenError message={g.error} onRetry={onGen} keptExisting={!!project.sections.synthesis} />}
@@ -469,6 +492,8 @@ export default function Workspace() {
   const store = useStore();
   const { active, draft, draftStep, setDraftStep, updateProject, createProject, saveError, retrySave, loadProblem, dismissLoadProblem } = store;
   const { run, get } = useGenerator();
+  const dirGen = useDirectionsGen();
+  const ideasGen = useInterviewIdeasGen();
   const [chatOpen, setChatOpen] = useState(false);
   const step: Step = active ? active.step : draftStep;
   const mainRef = useRef<HTMLDivElement>(null);
@@ -512,7 +537,7 @@ export default function Workspace() {
         </div>
       </header>
 
-      <Stepper step={step} project={active} onGo={go} />
+      <Stepper step={step} project={active} onGo={go} hasDirections={store.ideaSets.length > 0} />
 
       {(saveError || loadProblem) && (
         <div className="space-y-px">
@@ -538,7 +563,8 @@ export default function Workspace() {
           <div key={`${active?.id ?? 'draft'}-${step}`} className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-8 sm:py-10">
             {active?.sample && <SampleBanner />}
 
-            {step === 1 && <FrameStep project={active} onCreate={onCreate} onContinue={onContinue} />}
+            {step === 0 && <FindIdeaStep gen={dirGen} onSkip={() => go(1)} onResearched={() => undefined} />}
+            {step === 1 && <FrameStep project={active} onCreate={onCreate} onContinue={onContinue} onFindIdea={() => go(0)} />}
 
             {step === 2 && active && (
               <SectionShell
@@ -584,7 +610,8 @@ export default function Workspace() {
             )}
 
             {step === 4 && active && <KitStep project={active} g={get(active, 'kit')} onGen={() => gen('kit')} />}
-            {step === 5 && active && <SynthesisStep project={active} g={get(active, 'synthesis')} onGen={() => gen('synthesis')} />}
+            {step === 5 && active && <SynthesisStep project={active} g={get(active, 'synthesis')} onGen={() => gen('synthesis')} onIdeas={() => go(6)} />}
+            {step === 6 && active && <InterviewIdeasStep project={active} g={ideasGen.get(active)} onGen={() => void ideasGen.run(active)} onGoNotes={() => go(5)} />}
 
             {step > 1 && !active && (
               <div className="rounded-2xl border border-dashed p-10 text-center">
@@ -595,12 +622,12 @@ export default function Workspace() {
 
             {active && (
               <div className="flex items-center justify-between border-t pt-6">
-                <Button variant="ghost" onClick={() => go((step - 1) as Step)} disabled={step === 1} data-testid="button-prev-step">
-                  <ArrowLeft /> {step > 1 ? STEPS[step - 2].label : 'Back'}
+                <Button variant="ghost" onClick={() => go((step - 1) as Step)} disabled={step === 0} data-testid="button-prev-step">
+                  <ArrowLeft /> {step > 0 ? stepInfo((step - 1) as Step).label : 'Back'}
                 </Button>
-                {step < 5 && step > 1 && (
+                {step < 6 && step !== 1 && (
                   <Button variant="outline" onClick={() => go((step + 1) as Step)} data-testid="button-next-step">
-                    {STEPS[step].label} <ArrowRight />
+                    {stepInfo((step + 1) as Step).label} <ArrowRight />
                   </Button>
                 )}
               </div>

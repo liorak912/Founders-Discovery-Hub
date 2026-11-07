@@ -1,9 +1,26 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import type { InterviewIdeasOutput, StartupDirection } from '@workspace/api-client-react';
 import { createSampleProject } from './seed';
 
 export type SectionKey = 'brief' | 'people' | 'kit' | 'synthesis';
 export type ChatMsg = { role: 'user' | 'assistant'; content: string; at: number };
-export type Step = 1 | 2 | 3 | 4 | 5;
+export type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+export interface FounderProfile { skills: string; interests: string; experience: string; problems: string }
+export interface IdeaSet {
+  id: string;
+  createdAt: number;
+  profile: FounderProfile;
+  /** Set this variation set was derived from; undefined for an original set. */
+  parentId?: string;
+  seed?: StartupDirection;
+  ideas: StartupDirection[];
+}
+export interface InterviewIdeasResult extends InterviewIdeasOutput {
+  sourceNotes: string;
+  generatedAt: number;
+  sample?: boolean;
+}
 
 export interface Project {
   id: string;
@@ -20,6 +37,7 @@ export interface Project {
   notes: string;
   chat: ChatMsg[];
   sample?: boolean;
+  interviewIdeas?: InterviewIdeasResult;
 }
 
 export interface Draft { industry: string; idea: string; customer: string }
@@ -31,10 +49,14 @@ interface PersistShape {
   draft: Draft;
   draftChat: ChatMsg[];
   draftStep: Step;
+  founder?: FounderProfile;
+  ideaSets?: IdeaSet[];
+  ideaView?: string | null;
 }
 
 const KEY = 'discovery.workspace.v1';
 const emptyDraft: Draft = { industry: '', idea: '', customer: '' };
+export const emptyFounder: FounderProfile = { skills: '', interests: '', experience: '', problems: '' };
 
 type LoadResult = { state: PersistShape; problem: string | null };
 
@@ -61,6 +83,9 @@ function load(): LoadResult {
         draft: parsed.draft ?? emptyDraft,
         draftChat: parsed.draftChat ?? [],
         draftStep: parsed.draftStep ?? 1,
+        founder: { ...emptyFounder, ...(parsed.founder ?? {}) },
+        ideaSets: Array.isArray(parsed.ideaSets) ? parsed.ideaSets : [],
+        ideaView: parsed.ideaView ?? null,
       },
       problem: null,
     };
@@ -93,6 +118,14 @@ interface StoreValue {
   updateProject: (id: string, fn: (p: Project) => Partial<Project>) => void;
   deleteProject: (id: string) => void;
   restoreSample: () => void;
+  founder: FounderProfile;
+  ideaSets: IdeaSet[];
+  ideaView: string | null;
+  setFounder: (patch: Partial<FounderProfile>) => void;
+  setIdeaView: (id: string | null) => void;
+  /** Adds a set. Switches view to it only if the view is still `expectView` (so a later navigation isn't stomped). */
+  addIdeaSet: (set: IdeaSet, expectView: string | null) => void;
+  researchDirection: (d: StartupDirection) => void;
 }
 
 const Ctx = createContext<StoreValue | null>(null);
@@ -173,7 +206,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setFounder = useCallback((patch: Partial<FounderProfile>) => setState((s) => ({ ...s, founder: { ...emptyFounder, ...s.founder, ...patch } })), []);
+  const setIdeaView = useCallback((id: string | null) => setState((s) => ({ ...s, ideaView: id })), []);
+  const addIdeaSet = useCallback((set: IdeaSet, expectView: string | null) => setState((s) => ({
+    ...s,
+    ideaSets: [...(s.ideaSets ?? []), set],
+    ideaView: (s.ideaView ?? null) === expectView ? set.id : s.ideaView,
+  })), []);
+  const researchDirection = useCallback((d: StartupDirection) => setState((s) => ({
+    ...s,
+    activeId: null,
+    draft: { industry: d.industry.slice(0, 300), idea: `${d.title}\n\nProblem: ${d.problem}\n\nPossible solution: ${d.solution}`.slice(0, 3000), customer: d.customer.slice(0, 1000) },
+    draftStep: 1,
+  })), []);
+
   const value: StoreValue = {
+    founder: state.founder ?? emptyFounder,
+    ideaSets: state.ideaSets ?? [],
+    ideaView: state.ideaView ?? null,
+    setFounder,
+    setIdeaView,
+    addIdeaSet,
+    researchDirection,
     projects: state.projects,
     active,
     draft: state.draft,

@@ -4,19 +4,22 @@ import { ArrowUp, RotateCcw, Trash2, AlertTriangle, MessageCircleQuestion } from
 import { Button } from '@/components/ui/button';
 import { Markdown } from '@/components/markdown';
 import { useStore, type ChatMsg, type Step } from '@/lib/store';
-import { buildChatContext, buildHistory, errorMessage, LIMITS, STEPS } from '@/lib/discovery';
+import { buildChatContext, buildHistory, errorMessage, LIMITS, stepInfo } from '@/lib/discovery';
 import { cn } from '@/lib/utils';
 
 const SUGGESTIONS: Record<number, string[]> = {
+  0: ['Which direction fits me best?', 'How do I test a direction cheaply?', 'What if none of these fit?'],
   1: ['How narrow should my industry be?', 'I have no idea yet. Is that okay?', 'What makes a good first market?'],
   2: ['Which pain point should I test first?', 'Explain the money flow simply', 'What would disprove these hypotheses?'],
   3: ['Which segment is easiest to reach?', 'How do I ask for an intro?', 'How many people should I talk to?'],
   4: ['Make my outreach warmer', 'How do I avoid leading questions?', 'What if they ask about my idea?'],
   5: ['How do I spot a false positive?', 'What should I do next?', 'How do I tag my notes?'],
+  6: ['Which idea has the weakest evidence?', 'How do I run the cheapest test?', 'Who should I interview next?'],
 };
 
 export function ChatPanel({ step, className }: { step: Step; className?: string }) {
-  const { active, draft, draftChat, setDraftChat, updateProject } = useStore();
+  const { active, draft, draftChat, setDraftChat, updateProject, founder, ideaSets, ideaView } = useStore();
+  const ideaSet = ideaSets.find((x) => x.id === ideaView) ?? ideaSets[ideaSets.length - 1] ?? null;
   const chat = useChatDiscovery();
   const messages = active ? active.chat : draftChat;
   const [input, setInput] = useState('');
@@ -42,7 +45,7 @@ export function ChatPanel({ step, className }: { step: Step; className?: string 
       const res = await chat.mutateAsync({
         data: {
           message,
-          context: buildChatContext({ project: active, draft, step }),
+          context: buildChatContext({ project: active, draft, step, founder, ideaSet }),
           history: buildHistory(prior),
         },
       });
@@ -101,7 +104,7 @@ export function ChatPanel({ step, className }: { step: Step; className?: string 
             <MessageCircleQuestion className="mb-2 h-5 w-5 text-[hsl(var(--chart-2))]" />
             <p className="text-sm font-medium">Stuck, unsure, or second-guessing?</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Ask anything about {STEPS[step - 1].label.toLowerCase()}. I'll answer using what's on your screen.
+              Ask anything about {stepInfo(step).label.toLowerCase()}. I'll answer using what's on your screen.
             </p>
           </div>
         )}
@@ -144,7 +147,7 @@ export function ChatPanel({ step, className }: { step: Step; className?: string 
       <div className="border-t p-3">
         {messages.length < 2 && !chat.isPending && (
           <div className="mb-2 flex flex-wrap gap-1.5">
-            {SUGGESTIONS[step].map((s) => (
+            {(SUGGESTIONS[step] ?? []).map((s) => (
               <button
                 key={s}
                 onClick={() => send(s)}

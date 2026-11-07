@@ -8,6 +8,110 @@
 import * as zod from 'zod';
 
 
+export const generateDirectionsBodySkillsMax = 3000;
+
+export const generateDirectionsBodyInterestsMax = 3000;
+
+export const generateDirectionsBodyExperienceMax = 3000;
+
+export const generateDirectionsBodyProblemsMax = 3000;
+
+export const generateDirectionsBodySeedDirectionMax = 6000;
+
+
+
+export const GenerateDirectionsBody = zod.object({
+  "skills": zod.string().max(generateDirectionsBodySkillsMax).optional(),
+  "interests": zod.string().max(generateDirectionsBodyInterestsMax).optional(),
+  "experience": zod.string().max(generateDirectionsBodyExperienceMax).optional(),
+  "problems": zod.string().max(generateDirectionsBodyProblemsMax).optional(),
+  "seedDirection": zod.string().max(generateDirectionsBodySeedDirectionMax).optional()
+})
+
+export const generateDirectionsResponseIdeasItemIndustryMax = 300;
+
+export const generateDirectionsResponseIdeasItemCustomerMax = 1000;
+
+export const generateDirectionsResponseIdeasMin = 5;
+export const generateDirectionsResponseIdeasMax = 5;
+
+
+
+export const GenerateDirectionsResponse = zod.object({
+  "ideas": zod.array(zod.object({
+  "title": zod.string(),
+  "industry": zod.string().max(generateDirectionsResponseIdeasItemIndustryMax),
+  "problem": zod.string(),
+  "customer": zod.string().max(generateDirectionsResponseIdeasItemCustomerMax),
+  "founderFit": zod.string(),
+  "solution": zod.string()
+})).min(generateDirectionsResponseIdeasMin).max(generateDirectionsResponseIdeasMax)
+})
+
+
+export const generateInterviewIdeasBodyNotesMax = 40000;
+
+export const generateInterviewIdeasBodyIndustryMax = 300;
+
+
+
+export const GenerateInterviewIdeasBody = zod.object({
+  "notes": zod.string().min(1).max(generateInterviewIdeasBodyNotesMax),
+  "industry": zod.string().max(generateInterviewIdeasBodyIndustryMax).optional(),
+  "sample": zod.boolean().optional()
+})
+
+export const generateInterviewIdeasResponseIdeasItemParticipantCountMin = 0;
+
+
+
+
+export const generateInterviewIdeasResponseIdeasItemQuotesMax = 2;
+
+export const generateInterviewIdeasResponseIdeasItemPainSeverityMax = 5;
+
+export const generateInterviewIdeasResponseIdeasItemFrequencyMax = 5;
+
+export const generateInterviewIdeasResponseIdeasItemEvidenceStrengthMax = 5;
+
+export const generateInterviewIdeasResponseIdeasMax = 5;
+
+export const generateInterviewIdeasResponseFollowUpQuestionsMin = 2;
+export const generateInterviewIdeasResponseFollowUpQuestionsMax = 3;
+
+
+
+export const GenerateInterviewIdeasResponse = zod.object({
+  "ideas": zod.array(zod.object({
+  "title": zod.string(),
+  "problem": zod.string(),
+  "participantCount": zod.number().int().min(generateInterviewIdeasResponseIdeasItemParticipantCountMin).nullable(),
+  "participants": zod.array(zod.object({
+  "label": zod.string().min(1),
+  "excerpt": zod.string().min(1)
+})),
+  "quotes": zod.array(zod.object({
+  "text": zod.string().min(1),
+  "participant": zod.string().nullable()
+})).max(generateInterviewIdeasResponseIdeasItemQuotesMax),
+  "evidenceCaveat": zod.string(),
+  "targetSegment": zod.string(),
+  "painIntensity": zod.string(),
+  "solution": zod.string(),
+  "workarounds": zod.string(),
+  "willingnessToPay": zod.string(),
+  "riskiestAssumption": zod.string(),
+  "cheapestTest": zod.string(),
+  "painSeverity": zod.number().int().min(1).max(generateInterviewIdeasResponseIdeasItemPainSeverityMax),
+  "frequency": zod.number().int().min(1).max(generateInterviewIdeasResponseIdeasItemFrequencyMax),
+  "evidenceStrength": zod.number().int().min(1).max(generateInterviewIdeasResponseIdeasItemEvidenceStrengthMax),
+  "scoreRationale": zod.string()
+})).max(generateInterviewIdeasResponseIdeasMax),
+  "gaps": zod.array(zod.string()),
+  "followUpQuestions": zod.array(zod.string()).min(generateInterviewIdeasResponseFollowUpQuestionsMin).max(generateInterviewIdeasResponseFollowUpQuestionsMax)
+})
+
+
 export const generateDiscoveryBodyIndustryMax = 300;
 
 export const generateDiscoveryBodyIdeaMax = 3000;

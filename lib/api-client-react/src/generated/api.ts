@@ -21,9 +21,13 @@ import type {
 
 import type {
   ChatInput,
+  DirectionsOutput,
   DiscoveryInput,
   DiscoveryOutput,
-  HealthStatus
+  FounderInput,
+  HealthStatus,
+  InterviewIdeasInput,
+  InterviewIdeasOutput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -52,6 +56,170 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGenerateDirectionsUrl = () => {
+
+
+
+
+  return `/api/discovery/directions`
+}
+
+export const generateDirections = async (founderInput: FounderInput, options?: Parameters<typeof customFetch>[1]): Promise<DirectionsOutput> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DirectionsOutput>(getGenerateDirectionsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(founderInput)
+  }
+);}
+
+
+
+
+
+export const getGenerateDirectionsMutationKey = () => ['generateDirections'] as const;
+
+export const getGenerateDirectionsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateDirections>>, TError,GenerateDirectionsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateDirections>>, TError,GenerateDirectionsMutationVariables, TContext> => {
+
+const mutationKey = getGenerateDirectionsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateDirections>>, GenerateDirectionsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateDirections(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateDirectionsMutationResult = NonNullable<Awaited<ReturnType<typeof generateDirections>>>
+    export type GenerateDirectionsMutationBody = BodyType<FounderInput>
+    export type GenerateDirectionsMutationError = ErrorType<unknown>
+    export type GenerateDirectionsMutationVariables = {data: BodyType<FounderInput>}
+
+    export const useGenerateDirections = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateDirections>>, TError,GenerateDirectionsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateDirections>>,
+        TError,
+        GenerateDirectionsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGenerateDirectionsMutationOptions(options));
+    }
+
+export const getGenerateInterviewIdeasUrl = () => {
+
+
+
+
+  return `/api/discovery/interview-ideas`
+}
+
+export const generateInterviewIdeas = async (interviewIdeasInput: InterviewIdeasInput, options?: Parameters<typeof customFetch>[1]): Promise<InterviewIdeasOutput> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<InterviewIdeasOutput>(getGenerateInterviewIdeasUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(interviewIdeasInput)
+  }
+);}
+
+
+
+
+
+export const getGenerateInterviewIdeasMutationKey = () => ['generateInterviewIdeas'] as const;
+
+export const getGenerateInterviewIdeasMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateInterviewIdeas>>, TError,GenerateInterviewIdeasMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateInterviewIdeas>>, TError,GenerateInterviewIdeasMutationVariables, TContext> => {
+
+const mutationKey = getGenerateInterviewIdeasMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateInterviewIdeas>>, GenerateInterviewIdeasMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateInterviewIdeas(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateInterviewIdeasMutationResult = NonNullable<Awaited<ReturnType<typeof generateInterviewIdeas>>>
+    export type GenerateInterviewIdeasMutationBody = BodyType<InterviewIdeasInput>
+    export type GenerateInterviewIdeasMutationError = ErrorType<unknown>
+    export type GenerateInterviewIdeasMutationVariables = {data: BodyType<InterviewIdeasInput>}
+
+    export const useGenerateInterviewIdeas = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateInterviewIdeas>>, TError,GenerateInterviewIdeasMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateInterviewIdeas>>,
+        TError,
+        GenerateInterviewIdeasMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGenerateInterviewIdeasMutationOptions(options));
+    }
 
 export const getGenerateDiscoveryUrl = () => {
 

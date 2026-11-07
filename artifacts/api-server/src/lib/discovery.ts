@@ -18,11 +18,12 @@ export const sectionInstructions = {
   synthesis: `Analyze the supplied notes only. Group recurring pains with evidence and interview labels; do not claim recurrence across participants unless distinct interview evidence exists. Compare each prior hypothesis as supported, contradicted, mixed, or untested, with explanations. Include notable verbatim quotes only where present, counter-evidence, gaps and concrete next steps. Explicitly distinguish observations from interpretation. If notes are too sparse to conclude anything say so and give follow-up questions.`,
 };
 
-export async function answer(messages: { role: "system" | "user" | "assistant"; content: string }[]) {
+export async function answer(messages: { role: "system" | "user" | "assistant"; content: string }[], json = false) {
   const result = await openai.chat.completions.create({
     model: "gpt-5.4-mini",
     max_completion_tokens: 8192,
     messages,
+    ...(json ? { response_format: { type: "json_object" as const } } : {}),
   }, { timeout: 120000, maxRetries: 2 });
   const choice = result.choices[0];
   if (!choice?.message.content?.trim() || choice.finish_reason === "length") {

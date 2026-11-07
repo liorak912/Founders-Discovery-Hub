@@ -11,6 +11,38 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /discovery/directions:
+    post:
+      operationId: generateDirections
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FounderInput"
+      responses:
+        "200":
+          description: Five problem-first directions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectionsOutput"
+  /discovery/interview-ideas:
+    post:
+      operationId: generateInterviewIdeas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InterviewIdeasInput"
+      responses:
+        "200":
+          description: Evidence-grounded ideas and research gaps
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewIdeasOutput"
   /discovery/generate:
     post:
       operationId: generateDiscovery
@@ -58,6 +90,94 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    FounderInput:
+      type: object
+      properties:
+        skills: { type: string, maxLength: 3000 }
+        interests: { type: string, maxLength: 3000 }
+        experience: { type: string, maxLength: 3000 }
+        problems: { type: string, maxLength: 3000 }
+        seedDirection: { type: string, maxLength: 6000 }
+    StartupDirection:
+      type: object
+      required: [title, industry, problem, customer, founderFit, solution]
+      properties:
+        title: { type: string }
+        industry: { type: string, maxLength: 300 }
+        problem: { type: string }
+        customer: { type: string, maxLength: 1000 }
+        founderFit: { type: string }
+        solution: { type: string }
+    DirectionsOutput:
+      type: object
+      required: [ideas]
+      properties:
+        ideas:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items: { $ref: "#/components/schemas/StartupDirection" }
+    InterviewIdeasInput:
+      type: object
+      required: [notes]
+      properties:
+        notes: { type: string, minLength: 1, maxLength: 40000 }
+        industry: { type: string, maxLength: 300 }
+        sample: { type: boolean }
+    EvidenceQuote:
+      type: object
+      required: [text, participant]
+      properties:
+        text: { type: string, minLength: 1 }
+        participant: { type: ["string", "null"] }
+    ParticipantEvidence:
+      type: object
+      required: [label, excerpt]
+      properties:
+        label: { type: string, minLength: 1 }
+        excerpt: { type: string, minLength: 1 }
+    InterviewIdea:
+      type: object
+      required: [title, problem, participantCount, participants, quotes, evidenceCaveat, targetSegment, painIntensity, solution, workarounds, willingnessToPay, riskiestAssumption, cheapestTest, painSeverity, frequency, evidenceStrength, scoreRationale]
+      properties:
+        title: { type: string }
+        problem: { type: string }
+        participantCount: { type: ["integer", "null"], minimum: 0 }
+        participants:
+          type: array
+          items: { $ref: "#/components/schemas/ParticipantEvidence" }
+        quotes:
+          type: array
+          maxItems: 2
+          items: { $ref: "#/components/schemas/EvidenceQuote" }
+        evidenceCaveat: { type: string }
+        targetSegment: { type: string }
+        painIntensity: { type: string }
+        solution: { type: string }
+        workarounds: { type: string }
+        willingnessToPay: { type: string }
+        riskiestAssumption: { type: string }
+        cheapestTest: { type: string }
+        painSeverity: { type: integer, minimum: 1, maximum: 5 }
+        frequency: { type: integer, minimum: 1, maximum: 5 }
+        evidenceStrength: { type: integer, minimum: 1, maximum: 5 }
+        scoreRationale: { type: string }
+    InterviewIdeasOutput:
+      type: object
+      required: [ideas, gaps, followUpQuestions]
+      properties:
+        ideas:
+          type: array
+          maxItems: 5
+          items: { $ref: "#/components/schemas/InterviewIdea" }
+        gaps:
+          type: array
+          items: { type: string }
+        followUpQuestions:
+          type: array
+          minItems: 2
+          maxItems: 3
+          items: { type: string }
     DiscoveryInput:
       type: object
       required: [industry, section]

@@ -3,8 +3,10 @@ import { rateLimit } from "express-rate-limit";
 import {
   GenerateDiscoveryBody, GenerateDiscoveryResponse,
   ChatDiscoveryBody, ChatDiscoveryResponse,
+  GenerateDirectionsBody, GenerateInterviewIdeasBody,
 } from "@workspace/api-zod";
 import { answer, discoverySystem, sectionInstructions } from "../lib/discovery";
+import { generateDirections, generateInterviewIdeas } from "../lib/idea-generation";
 
 const router: IRouter = Router();
 // An anonymous tool: bound requests and simultaneous provider calls.
@@ -26,6 +28,34 @@ router.use((_req, res, next) => {
   res.once("finish", release);
   res.once("close", release);
   next();
+});
+
+router.post("/directions", async (req, res): Promise<void> => {
+  const parsed = GenerateDirectionsBody.safeParse(req.body);
+  if (!parsed.success || ![parsed.data.skills, parsed.data.interests, parsed.data.experience, parsed.data.problems].some((s) => s?.trim())) {
+    res.status(400).json({ error: "Share at least one skill, interest, industry connection, or problem you have noticed." });
+    return;
+  }
+  try {
+    res.json(await generateDirections(parsed.data));
+  } catch {
+    req.log.error("Startup direction generation failed");
+    res.status(502).json({ error: "We couldn't generate five complete directions. Your saved ideas are unchanged. Please retry." });
+  }
+});
+
+router.post("/interview-ideas", async (req, res): Promise<void> => {
+  const parsed = GenerateInterviewIdeasBody.safeParse(req.body);
+  if (!parsed.success || !parsed.data.notes.trim()) {
+    res.status(400).json({ error: "Paste interview notes first (up to 40,000 characters)." });
+    return;
+  }
+  try {
+    res.json(await generateInterviewIdeas(parsed.data));
+  } catch {
+    req.log.error("Interview idea generation failed");
+    res.status(502).json({ error: "We couldn't complete the evidence-based ideas. Your saved results are unchanged. Please retry." });
+  }
 });
 
 router.post("/generate", async (req, res): Promise<void> => {
