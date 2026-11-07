@@ -85,7 +85,7 @@ export const GenerateInterviewIdeasResponse = zod.object({
   "ideas": zod.array(zod.object({
   "title": zod.string(),
   "problem": zod.string(),
-  "participantCount": zod.number().int().min(generateInterviewIdeasResponseIdeasItemParticipantCountMin).nullable(),
+  "participantCount": zod.int().min(generateInterviewIdeasResponseIdeasItemParticipantCountMin).nullable(),
   "participants": zod.array(zod.object({
   "label": zod.string().min(1),
   "excerpt": zod.string().min(1)
@@ -102,9 +102,9 @@ export const GenerateInterviewIdeasResponse = zod.object({
   "willingnessToPay": zod.string(),
   "riskiestAssumption": zod.string(),
   "cheapestTest": zod.string(),
-  "painSeverity": zod.number().int().min(1).max(generateInterviewIdeasResponseIdeasItemPainSeverityMax),
-  "frequency": zod.number().int().min(1).max(generateInterviewIdeasResponseIdeasItemFrequencyMax),
-  "evidenceStrength": zod.number().int().min(1).max(generateInterviewIdeasResponseIdeasItemEvidenceStrengthMax),
+  "painSeverity": zod.int().min(1).max(generateInterviewIdeasResponseIdeasItemPainSeverityMax),
+  "frequency": zod.int().min(1).max(generateInterviewIdeasResponseIdeasItemFrequencyMax),
+  "evidenceStrength": zod.int().min(1).max(generateInterviewIdeasResponseIdeasItemEvidenceStrengthMax),
   "scoreRationale": zod.string()
 })).max(generateInterviewIdeasResponseIdeasMax),
   "gaps": zod.array(zod.string()),
